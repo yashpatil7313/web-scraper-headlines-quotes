@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+scraped_*.json
+scraped_*.txt
+scraped_*.csv

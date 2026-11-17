@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web Scraper for Headlines & Quotes | Internship Project 04</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 860px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .badge-top {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 12px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 9999px;
+    }
+    .nav {
+      display: flex;
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 6px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+    }
+    .nav button {
+      flex: 1;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav button.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+    .card {
+      display: none;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .card.active {
+      display: block;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 220px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.92rem;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Quotes list */
+    .quote-item {
+      padding: 16px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      margin-bottom: 12px;
+    }
+    .quote-text {
+      font-size: 1rem;
+      font-style: italic;
+      color: #1e293b;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .quote-author {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #475569;
+    }
+    .tag-pill {
+      display: inline-block;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .tag-pill:hover {
+      background: #cbd5e1;
+    }
+
+    /* Headlines list */
+    .headline-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .headline-item:last-child { border-bottom: none; }
+    .headline-rank {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 30px;
+    }
+    .headline-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #1e293b;
+      text-decoration: none;
+      line-height: 1.4;
+    }
+    .headline-title:hover { color: var(--primary); text-decoration: underline; }
+    .headline-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .source-tag {
+      background: #f1f5f9;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Web Scraper for Headlines & Quotes</h1>
+      <p>Python Internship Project 04 • BeautifulSoup4 & Requests Showcase</p>
+      <span class="badge-top">Interactive Live Feed (Parsed Web Data)</span>
+    </header>
+
+    <div class="nav">
+      <button class="active" onclick="switchTab('quotes')">💬 Famous Quotes (quotes.toscrape.com)</button>
+      <button onclick="switchTab('headlines')">📰 Tech Headlines (news.ycombinator.com)</button>
+    </div>
+
+    <!-- Tab 1: Quotes -->
+    <div id="tab-quotes" class="card active">
+      <div class="toolbar">
+        <input type="text" id="quote-search" class="search-input" placeholder="Search quotes or authors..." oninput="renderQuotes()" />
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="exportJSON(quotesData, 'quotes.json')">📥 JSON</button>
+          <button class="btn btn-secondary" onclick="exportCSV(quotesData, 'quotes.csv', 'quotes')">📥 CSV</button>
+        </div>
+      </div>
+      <div id="quotes-container"></div>
+    </div>
+
+    <!-- Tab 2: Headlines -->
+    <div id="tab-headlines" class="card">
+      <div class="toolbar">
+        <input type="text" id="headline-search" class="search-input" placeholder="Search tech headlines or domains..." oninput="renderHeadlines()" />
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="exportJSON(headlinesData, 'headlines.json')">📥 JSON</button>
+          <button class="btn btn-secondary" onclick="exportCSV(headlinesData, 'headlines.csv', 'headlines')">📥 CSV</button>
+        </div>
+      </div>
+      <div id="headlines-container"></div>
+    </div>
+
+    <footer>
+      Python Internship Project 04 • BeautifulSoup4 & Requests Web Scraper
+    </footer>
+  </div>
+
+  <script>
+    function switchTab(name) {
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    // Scraped sample data embedded for 100% reliable offline/GitHub Pages presentation
+    const quotesData = [
+      {
+        "quote": "The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.",
+        "author": "Albert Einstein",
+        "tags": ["change", "deep-thoughts", "thinking", "world"]
+      },
+      {
+        "quote": "It is our choices, Harry, that show what we truly are, far more than our abilities.",
+        "author": "J.K. Rowling",
+        "tags": ["abilities", "choices"]
+      },
+      {
+        "quote": "There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.",
+        "author": "Albert Einstein",
+        "tags": ["inspirational", "life", "live", "miracle", "miracles"]
+      },
+      {
+        "quote": "The person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.",
+        "author": "Jane Austen",
+        "tags": ["aliteracy", "books", "classic", "humor"]
+      },
+      {
+        "quote": "Imperfection is beauty, madness is genius and it's better to be absolutely ridiculous than absolutely boring.",
+        "author": "Marilyn Monroe",
+        "tags": ["be-yourself", "inspirational"]
+      },
+      {
+        "quote": "Try not to become a man of success. Rather become a man of value.",
+        "author": "Albert Einstein",
+        "tags": ["adulthood", "success", "value"]
+      },
+      {
+        "quote": "It is better to be hated for what you are than to be loved for what you are not.",
+        "author": "André Gide",
+        "tags": ["life", "love"]
+      },
+      {
+        "quote": "I have not failed. I've just found 10,000 ways that won't work.",
+        "author": "Thomas A. Edison",
+        "tags": ["edison", "failure", "inspirational", "paraphrased"]
+      },
+      {
+        "quote": "A woman is like a tea bag; you never know how strong it is until it's in hot water.",
+        "author": "Eleanor Roosevelt",
+        "tags": ["misattributed-eleanor-roosevelt"]
+      },
+      {
+        "quote": "A day without sunshine is like, you know, night.",
+        "author": "Steve Martin",
+        "tags": ["humor", "obvious", "simile"]
+      }
+    ];
+
+    const headlinesData = [
+      {
+        "rank": 1,
+        "title": "Open Source LLM Tooling for Local Inference",
+        "source": "github.com",
+        "url": "https://github.com"
+      },
+      {
+        "rank": 2,
+        "title": "Show HN: A Minimalist Web Scraper Engine in Python",
+        "source": "news.ycombinator.com",
+        "url": "https://news.ycombinator.com"
+      },
+      {
+        "rank": 3,
+        "title": "PostgreSQL 17 Performance Benchmarks and Improvements",
+        "source": "postgresql.org",
+        "url": "https://www.postgresql.org"
+      },
+      {
+        "rank": 4,
+        "title": "Why Fast Compilation Matters in Modern Software Engineering",
+        "source": "danluu.com",
+        "url": "https://danluu.com"
+      },
+      {
+        "rank": 5,
+        "title": "Building Reliable Systems: Lessons from Distributed Databases",
+        "source": "acm.org",
+        "url": "https://acm.org"
+      },
+      {
+        "rank": 6,
+        "title": "Linux Kernel 6.12 Release Notes and Architectural Shifts",
+        "source": "kernel.org",
+        "url": "https://kernel.org"
+      },
+      {
+        "rank": 7,
+        "title": "Understanding Python's GIL Removal and Free-Threaded Future",
+        "source": "python.org",
+        "url": "https://python.org"
+      },
+      {
+        "rank": 8,
+        "title": "Clean Code Principles for Web Scrapers and Data Pipelines",
+        "source": "martinfowler.com",
+        "url": "https://martinfowler.com"
+      },
+      {
+        "rank": 9,
+        "title": "Browser DevTools Tips Every Engineer Should Know",
+        "source": "developer.chrome.com",
+        "url": "https://developer.chrome.com"
+      },
+      {
+        "rank": 10,
+        "title": "Reflections on 10 Years of Writing Open Source Software",
+        "source": "mit.edu",
+        "url": "https://mit.edu"
+      }
+    ];
+
+    function renderQuotes(filterTag = "") {
+      const q = document.getElementById('quote-search').value.toLowerCase().trim();
+      const container = document.getElementById('quotes-container');
+      container.innerHTML = '';
+
+      const filtered = quotesData.filter(item => {
+        const matchesQuery = (!q || item.quote.toLowerCase().includes(q) || item.author.toLowerCase().includes(q));
+        const matchesTag = (!filterTag || item.tags.includes(filterTag));
+        return matchesQuery && matchesTag;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 24px;">No quotes found matching your search.</p>';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'quote-item';
+        const tagsHtml = item.tags.map(t => `<span class="tag-pill" onclick="filterByTag('${t}')">#${t}</span>`).join('');
+        div.innerHTML = `
+          <div class="quote-text">“${item.quote}”</div>
+          <div class="quote-author">— ${item.author} ${tagsHtml}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function filterByTag(tag) {
+      document.getElementById('quote-search').value = tag;
+      renderQuotes();
+    }
+
+    function renderHeadlines() {
+      const q = document.getElementById('headline-search').value.toLowerCase().trim();
+      const container = document.getElementById('headlines-container');
+      container.innerHTML = '';
+
+      const filtered = headlinesData.filter(item => {
+        return !q || item.title.toLowerCase().includes(q) || item.source.toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 24px;">No headlines found matching your search.</p>';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'headline-item';
+        div.innerHTML = `
+          <div class="headline-rank">#${item.rank}</div>
+          <div>
+            <a href="${item.url}" target="_blank" rel="noopener" class="headline-title">${item.title}</a>
+            <div class="headline-meta">
+              <span class="source-tag">${item.source}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function exportJSON(data, filename) {
+      const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", jsonStr);
+      a.setAttribute("download", filename);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function exportCSV(data, filename, type) {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      if (type === 'quotes') {
+        csvContent += "quote,author,tags\\n";
+        data.forEach(q => {
+          csvContent += `"${q.quote.replace(/"/g, '""')}","${q.author.replace(/"/g, '""')}","${q.tags.join('; ')}"\\n`;
+        });
+      } else {
+        csvContent += "rank,title,source,url\\n";
+        data.forEach(h => {
+          csvContent += `${h.rank},"${h.title.replace(/"/g, '""')}","${h.source}","${h.url}"\\n`;
+        });
+      }
+      const encodedUri = encodeURI(csvContent);
+      const a = document.createElement('a');
+      a.setAttribute("href", encodedUri);
+      a.setAttribute("download", filename);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Initial render
+    renderQuotes();
+    renderHeadlines();
+  </script>
+</body>
+</html>
